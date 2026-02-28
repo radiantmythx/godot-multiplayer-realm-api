@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: realm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: realm_auth
+      POSTGRES_USER: realm_user
+      POSTGRES_PASSWORD: realm_password_change_me
+    ports:
+      - "5433:5432"
+    volumes:
+      - realm_pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+
+volumes:
+  realm_pgdata:
