@@ -5,10 +5,13 @@ using Microsoft.IdentityModel.Tokens;
 using RealmAuthApi.Data;
 using RealmAuthApi.Security;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+// Swagger (no Microsoft.OpenApi.Models usage)
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 // DB
 builder.Services.AddDbContext<RealmAuthDbContext>(options =>
@@ -40,6 +43,12 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtTokenService>();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseRouting();
 
