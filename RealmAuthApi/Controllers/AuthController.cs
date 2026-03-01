@@ -12,11 +12,13 @@ public sealed class AuthController : ControllerBase
 {
     private readonly RealmAuthDbContext _db;
     private readonly JwtTokenService _tokens;
+    private readonly IPasswordHasher _hasher;
 
-    public AuthController(RealmAuthDbContext db, JwtTokenService tokens)
+    public AuthController(RealmAuthDbContext db, JwtTokenService tokens, IPasswordHasher hasher)
     {
         _db = db;
         _tokens = tokens;
+        _hasher = hasher;
     }
 
     public sealed record RegisterRequest(string Username, string Email, string Password);
@@ -41,7 +43,7 @@ public sealed class AuthController : ControllerBase
         if (exists)
             return Conflict(new { error = "Username or email already exists." });
 
-        var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+        var hash = _hasher.Hash(req.Password ?? "");
 
         var account = new Account
         {
@@ -78,7 +80,7 @@ public sealed class AuthController : ControllerBase
         if (account is null)
             return Unauthorized(new { error = "Invalid credentials." });
 
-        var ok = BCrypt.Net.BCrypt.Verify(req.Password ?? "", account.PasswordHash);
+        var ok = _hasher.Verify(account.PasswordHash, req.Password ?? "");
         if (!ok)
             return Unauthorized(new { error = "Invalid credentials." });
 

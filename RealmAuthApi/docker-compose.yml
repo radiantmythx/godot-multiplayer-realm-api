@@ -11,7 +11,6 @@ services:
       - "5433:5432"
     volumes:
       - realm_pgdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d
 
 volumes:
   realm_pgdata:
