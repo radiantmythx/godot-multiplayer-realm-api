@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RealmAuthApi.Data;
@@ -11,9 +12,11 @@ using RealmAuthApi.Data;
 namespace RealmAuthApi.Migrations
 {
     [DbContext(typeof(RealmAuthDbContext))]
-    partial class RealmAuthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260301000440_AddCharacters")]
+    partial class AddCharacters
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

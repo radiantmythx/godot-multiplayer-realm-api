@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RealmAuthApi.Data;
+using RealmAuthApi.Models;
 using RealmAuthApi.Security;
 
 namespace RealmAuthApi.Controllers;

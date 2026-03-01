@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RealmAuthApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6ae1ff2eb586a2c6340c98b6631d304c44e71111")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+77b5a9ab3b748889a3c8abecae6ce87052afa5cd")]
 [assembly: System.Reflection.AssemblyProductAttribute("RealmAuthApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RealmAuthApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
