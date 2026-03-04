@@ -129,4 +129,41 @@ public sealed class MapsController : ControllerBase
 
         return Ok(new { links });
     }
+
+    // GET /api/maps/123/spawns?tag=default
+    [HttpGet("{id:int}/spawns")]
+    public async Task<IActionResult> Spawns([FromRoute] int id, [FromQuery] string? tag)
+    {
+        var exists = await _db.Maps.AnyAsync(m => m.Id == id);
+        if (!exists) return NotFound(new { error = "Map not found." });
+
+        var q = _db.MapSpawnEntries.Where(s => s.MapId == id);
+
+        // Optional filtering if you want variants like ?tag=nightmare
+        if (!string.IsNullOrWhiteSpace(tag))
+        {
+            var t = tag.Trim().ToLowerInvariant();
+            q = q.Where(s => s.Tags.Contains(t));
+        }
+
+        var spawns = await q
+            .OrderByDescending(s => s.Weight)
+            .ThenBy(s => s.TypeId)
+            .Select(s => new
+            {
+                id = s.Id,
+                typeId = s.TypeId,
+                weight = s.Weight,
+                minPackSize = s.MinPackSize,
+                maxPackSize = s.MaxPackSize,
+                minPacks = s.MinPacks,
+                maxPacks = s.MaxPacks,
+                minLevel = s.MinLevel,
+                maxLevel = s.MaxLevel,
+                tags = s.Tags
+            })
+            .ToListAsync();
+
+        return Ok(new { mapId = id, spawns });
+    }
 }

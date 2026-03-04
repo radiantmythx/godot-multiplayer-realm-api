@@ -69,91 +69,120 @@ public static class DbSeeder
     }
 
     private static async Task EnsureMapsAsync(RealmAuthDbContext db, CancellationToken ct)
-{
-    // Upsert-ish helper by slug
-    async Task<Map> GetOrCreateAsync(
-        string slug,
-        string displayName,
-        string scenePath,
-        string kind,
-        bool isPlayable,
-        bool isHidden,
-        string[] tags,
-        int sortOrder,
-        int? minLevel = null,
-        int? maxLevel = null)
     {
-        var m = await db.Maps.FirstOrDefaultAsync(x => x.Slug == slug, ct);
-        if (m is not null)
+        // Upsert-ish helper by slug
+        async Task<Map> GetOrCreateAsync(
+            string slug,
+            string displayName,
+            string scenePath,
+            string kind,
+            bool isPlayable,
+            bool isHidden,
+            string[] tags,
+            int sortOrder,
+            int? minLevel = null,
+            int? maxLevel = null)
+        {
+            var m = await db.Maps.FirstOrDefaultAsync(x => x.Slug == slug, ct);
+            if (m is not null)
+                return m;
+
+            m = new Map
+            {
+                Slug = slug,
+                DisplayName = displayName,
+                ScenePath = scenePath,
+                Kind = kind,
+                IsPlayable = isPlayable,
+                IsHidden = isHidden,
+                Tags = tags,
+                SortOrder = sortOrder,
+                MinLevel = minLevel,
+                MaxLevel = maxLevel,
+                CreatedAt = DateTimeOffset.UtcNow
+            };
+
+            db.Maps.Add(m);
+            await db.SaveChangesAsync(ct); // so it gets an Id for links
             return m;
+        }
 
-        m = new Map
+        var hub = await GetOrCreateAsync(
+            slug: "hub",
+            displayName: "Hub",
+            scenePath: "res://maps/HubMap.tscn",
+            kind: "hub",
+            isPlayable: true,
+            isHidden: false,
+            tags: new[] { "hub", "safe", "vendor" },
+            sortOrder: 0);
+
+        var forest = await GetOrCreateAsync(
+            slug: "act1_forest_01",
+            displayName: "Whispering Forest",
+            scenePath: "res://maps/DebugMap.tscn",
+            kind: "overworld",
+            isPlayable: true,
+            isHidden: false,
+            tags: new[] { "act1", "forest", "combat" },
+            sortOrder: 10,
+            minLevel: 1,
+            maxLevel: 10);
+
+        async Task EnsureSpawnAsync(
+    Map map, string typeId, float weight,
+    int minPack, int maxPack,
+    int minPacks = 1, int maxPacks = 1,
+    string[]? tags = null)
         {
-            Slug = slug,
-            DisplayName = displayName,
-            ScenePath = scenePath,
-            Kind = kind,
-            IsPlayable = isPlayable,
-            IsHidden = isHidden,
-            Tags = tags,
-            SortOrder = sortOrder,
-            MinLevel = minLevel,
-            MaxLevel = maxLevel,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
+            tags ??= Array.Empty<string>();
 
-        db.Maps.Add(m);
-        await db.SaveChangesAsync(ct); // so it gets an Id for links
-        return m;
-    }
+            var exists = await db.MapSpawnEntries.AnyAsync(s =>
+                s.MapId == map.Id && s.TypeId == typeId, ct);
 
-    var hub = await GetOrCreateAsync(
-        slug: "hub",
-        displayName: "Hub",
-        scenePath: "res://maps/HubMap.tscn",
-        kind: "hub",
-        isPlayable: true,
-        isHidden: false,
-        tags: new[] { "hub", "safe", "vendor" },
-        sortOrder: 0);
+            if (exists) return;
 
-    var forest = await GetOrCreateAsync(
-        slug: "act1_forest_01",
-        displayName: "Whispering Forest",
-        scenePath: "res://maps/DebugMap.tscn",
-        kind: "overworld",
-        isPlayable: true,
-        isHidden: false,
-        tags: new[] { "act1", "forest", "combat" },
-        sortOrder: 10,
-        minLevel: 1,
-        maxLevel: 10);
+            db.MapSpawnEntries.Add(new MapSpawnEntry
+            {
+                MapId = map.Id,
+                TypeId = typeId,
+                Weight = weight,
+                MinPackSize = minPack,
+                MaxPackSize = maxPack,
+                MinPacks = minPacks,
+                MaxPacks = maxPacks,
+                Tags = tags
+            });
+        }
 
-    // Links (avoid duplicates via unique index)
-    async Task EnsureLinkAsync(Map from, Map to, string kind, string label, int sortOrder)
-    {
-        var exists = await db.MapLinks.AnyAsync(l =>
-            l.FromMapId == from.Id &&
-            l.ToMapId == to.Id &&
-            l.LinkKind == kind &&
-            l.Label == label, ct);
+        await EnsureSpawnAsync(forest, "slime_blue", 1.0f, 4, 8);
+        await EnsureSpawnAsync(forest, "goblin_green", 0.7f, 3, 6);
 
-        if (exists) return;
-
-        db.MapLinks.Add(new MapLink
+        // Links (avoid duplicates via unique index)
+        async Task EnsureLinkAsync(Map from, Map to, string kind, string label, int sortOrder)
         {
-            FromMapId = from.Id,
-            ToMapId = to.Id,
-            LinkKind = kind,
-            Label = label,
-            SortOrder = sortOrder,
-            IsEnabled = true,
-            CreatedAt = DateTimeOffset.UtcNow
-        });
-    }
+            var exists = await db.MapLinks.AnyAsync(l =>
+                l.FromMapId == from.Id &&
+                l.ToMapId == to.Id &&
+                l.LinkKind == kind &&
+                l.Label == label, ct);
 
-    await EnsureLinkAsync(hub, forest, "portal", "To Whispering Forest", 0);
-    await EnsureLinkAsync(forest, hub, "portal", "Return to Hub", 0);
-}
+            if (exists) return;
+
+            db.MapLinks.Add(new MapLink
+            {
+                FromMapId = from.Id,
+                ToMapId = to.Id,
+                LinkKind = kind,
+                Label = label,
+                SortOrder = sortOrder,
+                IsEnabled = true,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+        }
+
+        await EnsureLinkAsync(hub, forest, "portal", "To Whispering Forest", 0);
+        await EnsureLinkAsync(forest, hub, "portal", "Return to Hub", 0);
+    }
 
 }

@@ -11,6 +11,7 @@ public sealed class RealmAuthDbContext : DbContext
     public DbSet<Character> Characters => Set<Character>();
     public DbSet<Map> Maps => Set<Map>();
     public DbSet<MapLink> MapLinks => Set<MapLink>();
+    public DbSet<MapSpawnEntry> MapSpawnEntries => Set<MapSpawnEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -140,5 +141,47 @@ public sealed class RealmAuthDbContext : DbContext
 
             e.HasIndex(x => new { x.FromMapId, x.IsEnabled, x.SortOrder });
         });
+
+        modelBuilder.Entity<MapSpawnEntry>(e =>
+        {
+            e.ToTable("map_spawn_entries");
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Id).HasColumnName("id");
+
+            e.Property(x => x.MapId).HasColumnName("map_id").IsRequired();
+
+            e.Property(x => x.TypeId)
+                .HasColumnName("type_id")
+                .HasMaxLength(64)
+                .IsRequired();
+
+            e.Property(x => x.Weight).HasColumnName("weight").IsRequired();
+
+            e.Property(x => x.MinPackSize).HasColumnName("min_pack_size").IsRequired();
+            e.Property(x => x.MaxPackSize).HasColumnName("max_pack_size").IsRequired();
+
+            e.Property(x => x.MinPacks).HasColumnName("min_packs").IsRequired();
+            e.Property(x => x.MaxPacks).HasColumnName("max_packs").IsRequired();
+
+            e.Property(x => x.MinLevel).HasColumnName("min_level");
+            e.Property(x => x.MaxLevel).HasColumnName("max_level");
+
+            e.Property(x => x.Tags)
+                .HasColumnName("tags")
+                .HasColumnType("text[]")
+                .IsRequired();
+
+            e.HasOne(x => x.Map)
+                .WithMany()
+                .HasForeignKey(x => x.MapId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Prevent duplicate entries per map/type within same tag-set (simple version)
+            e.HasIndex(x => new { x.MapId, x.TypeId }).IsUnique();
+
+            e.HasIndex(x => new { x.MapId, x.Weight });
+        });
+
     }
 }
